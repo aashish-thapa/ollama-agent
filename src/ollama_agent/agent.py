@@ -29,22 +29,39 @@ def _build_system_prompt(tools: Dict[str, Dict[str, Any]]) -> str:
         f"- {name}: {info['description']}" for name, info in tools.items()
     )
 
-    return f"""You are a helpful assistant with access to various tools.
+    return f"""You are a helpful assistant with access to tools. You MUST use tools to answer questions that require real-time data.
 
 AVAILABLE TOOLS:
 {tool_list}
 
-HOW TO USE TOOLS:
-When you need to use a tool, respond ONLY with:
-TOOL: tool_name
-INPUT: the input for the tool (leave empty if not needed)
+TOOL CALLING FORMAT (you MUST follow this EXACTLY):
+When you need to use a tool, your ENTIRE response must be ONLY these two lines:
+TOOL: <tool_name>
+INPUT: <input_value>
 
-RULES:
-1. Use tools when you need real-time data, system info, or to perform actions
-2. After receiving tool results, provide a helpful summary
-3. For commands, be specific about what you're running
-4. Always explain what you're doing before using a tool
-5. If a tool fails, explain the error and suggest alternatives"""
+EXAMPLES:
+- To get current time:
+TOOL: get_current_time
+INPUT:
+
+- To search the web:
+TOOL: web_search
+INPUT: latest news today
+
+- To get IP info:
+TOOL: ip_info
+INPUT:
+
+- To get weather:
+TOOL: weather
+INPUT: New York
+
+CRITICAL RULES:
+1. When using a tool, output ONLY the two lines above - nothing else
+2. Do NOT write explanations before or after the tool call
+3. After receiving tool results, summarize them helpfully
+4. Use tools for: current time, weather, web searches, system info, calculations, file operations
+5. The tool name must match EXACTLY from the available tools list"""
 
 
 class OllamaAgent:
