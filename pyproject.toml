@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ollama-agent"
-version = "0.1.2"
+version = "0.1.3"
 description = "A lightweight AI agent library powered by Ollama with built-in tools and custom tool support"
 readme = "README.md"
 license = "MIT"

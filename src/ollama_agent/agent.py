@@ -10,23 +10,11 @@ from .exceptions import ToolNotFoundError
 from .tools import TOOLS, get_approval_type, register_tool_func, unregister_tool
 
 
-def _build_system_prompt(tools: Dict[str, Dict[str, Any]]) -> str:
-    """Build system prompt with all available tools.
-
-    Args:
-        tools: Dictionary of tools to include in the prompt
-
-    Returns:
-        Formatted system prompt string
-    """
-    tool_list = "\n".join(
-        f"- {name}: {info['description']}" for name, info in tools.items()
-    )
-
-    return f"""You are a helpful assistant with access to tools. You MUST use tools to answer questions that require real-time data.
+# Default system prompt template - use {tools} placeholder for tool list
+DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant with access to tools. You MUST use tools to answer questions that require real-time data.
 
 AVAILABLE TOOLS:
-{tool_list}
+{tools}
 
 TOOL CALLING FORMAT (you MUST follow this EXACTLY):
 When you need to use a tool, your ENTIRE response must be ONLY these two lines:
@@ -58,6 +46,44 @@ CRITICAL RULES:
 5. The tool name must match EXACTLY from the available tools list"""
 
 
+def _format_tool_list(tools: Dict[str, Dict[str, Any]]) -> str:
+    """Format tools dictionary into a string list.
+
+    Args:
+        tools: Dictionary of tools
+
+    Returns:
+        Formatted string with tool names and descriptions
+    """
+    return "\n".join(
+        f"- {name}: {info['description']}" for name, info in tools.items()
+    )
+
+
+def _build_system_prompt(
+    tools: Dict[str, Dict[str, Any]],
+    custom_prompt: Optional[str] = None,
+) -> str:
+    """Build system prompt with all available tools.
+
+    Args:
+        tools: Dictionary of tools to include in the prompt
+        custom_prompt: Optional custom prompt template with {tools} placeholder
+
+    Returns:
+        Formatted system prompt string
+    """
+    tool_list = _format_tool_list(tools)
+    prompt_template = custom_prompt or DEFAULT_SYSTEM_PROMPT
+
+    # Replace {tools} placeholder with actual tool list
+    if "{tools}" in prompt_template:
+        return prompt_template.format(tools=tool_list)
+    else:
+        # If no placeholder, append tools at the end
+        return f"{prompt_template}\n\nAVAILABLE TOOLS:\n{tool_list}"
+
+
 class OllamaAgent:
     """AI agent powered by Ollama with tool-calling capabilities.
 
@@ -75,6 +101,12 @@ class OllamaAgent:
         >>> def my_approval(tool_name: str, tool_input: str) -> bool:
         ...     return input(f"Allow {tool_name}? (y/n): ").lower() == 'y'
         >>> agent = OllamaAgent(approval_callback=my_approval)
+
+    With custom system prompt:
+        >>> custom_prompt = '''You are a JSON analysis bot.
+        ... {tools}
+        ... Always respond with valid JSON.'''
+        >>> agent = OllamaAgent(system_prompt=custom_prompt)
     """
 
     def __init__(
@@ -86,6 +118,7 @@ class OllamaAgent:
         approval_callback: Optional[Callable[[str, str], bool]] = None,
         tools: Optional[Dict[str, Dict[str, Any]]] = None,
         config: Optional[Config] = None,
+        system_prompt: Optional[str] = None,
     ):
         """Initialize the Ollama agent.
 
@@ -99,6 +132,9 @@ class OllamaAgent:
                               If None, tools run without approval.
             tools: Optional custom tools dictionary. If None, uses global TOOLS.
             config: Optional Config instance. If None, uses default config.
+            system_prompt: Optional custom system prompt template. Use {tools}
+                          placeholder to insert the tool list. If None, uses
+                          DEFAULT_SYSTEM_PROMPT.
         """
         self._config = config or default_config
 
@@ -107,6 +143,7 @@ class OllamaAgent:
         self._base_url = base_url or self._config.ollama_base_url
         self._temperature = temperature if temperature is not None else self._config.temperature
         self._max_iterations = max_iterations or self._config.max_iterations
+        self._system_prompt = system_prompt
 
         self.llm = ChatOllama(
             model=self._model,
@@ -121,7 +158,8 @@ class OllamaAgent:
 
     def _rebuild_system_prompt(self) -> None:
         """Rebuild the system prompt with current tools."""
-        self._messages = [SystemMessage(content=_build_system_prompt(self._tools))]
+        prompt = _build_system_prompt(self._tools, self._system_prompt)
+        self._messages = [SystemMessage(content=prompt)]
 
     @property
     def tools(self) -> Dict[str, Dict[str, Any]]:

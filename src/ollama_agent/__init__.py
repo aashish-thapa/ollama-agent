@@ -28,9 +28,9 @@ Configuration:
     ... )
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
-from .agent import OllamaAgent
+from .agent import DEFAULT_SYSTEM_PROMPT, OllamaAgent
 from .config import Config, config
 from .exceptions import (
     ApprovalDeniedError,
@@ -57,6 +57,7 @@ __all__ = [
     "__version__",
     # Main class
     "OllamaAgent",
+    "DEFAULT_SYSTEM_PROMPT",
     # Configuration
     "Config",
     "config",

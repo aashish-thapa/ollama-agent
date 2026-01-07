@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from ollama_agent.agent import OllamaAgent, _build_system_prompt
+from ollama_agent.agent import OllamaAgent, _build_system_prompt, DEFAULT_SYSTEM_PROMPT
 from ollama_agent.exceptions import ToolNotFoundError
 
 
@@ -35,6 +35,26 @@ class TestBuildSystemPrompt:
         prompt = _build_system_prompt({})
         assert "get_current_time" in prompt
         assert "web_search" in prompt
+
+    def test_custom_prompt_with_tools_placeholder(self):
+        tools = {"my_tool": {"func": lambda: None, "description": "Test tool"}}
+        custom_prompt = "Custom bot.\n{tools}\nEnd."
+        prompt = _build_system_prompt(tools, custom_prompt)
+        assert "Custom bot." in prompt
+        assert "my_tool" in prompt
+        assert "Test tool" in prompt
+        assert "End." in prompt
+
+    def test_custom_prompt_without_placeholder_appends_tools(self):
+        tools = {"my_tool": {"func": lambda: None, "description": "Test tool"}}
+        custom_prompt = "Custom bot without placeholder."
+        prompt = _build_system_prompt(tools, custom_prompt)
+        assert "Custom bot without placeholder." in prompt
+        assert "my_tool" in prompt
+        assert "AVAILABLE TOOLS:" in prompt
+
+    def test_default_system_prompt_has_placeholder(self):
+        assert "{tools}" in DEFAULT_SYSTEM_PROMPT
 
 
 class TestOllamaAgentInit:
@@ -68,6 +88,19 @@ class TestOllamaAgentInit:
         custom_tools = {"my_tool": {"func": lambda: "test", "description": "Test"}}
         agent = OllamaAgent(tools=custom_tools)
         assert "my_tool" in agent._tools
+
+    @patch("ollama_agent.agent.ChatOllama")
+    def test_custom_system_prompt(self, mock_chat):
+        custom_prompt = "You are a JSON bot.\n{tools}\nRespond with JSON only."
+        agent = OllamaAgent(system_prompt=custom_prompt)
+        assert agent._system_prompt == custom_prompt
+        # Check the system message contains our custom prompt text
+        assert "JSON bot" in agent._messages[0].content
+
+    @patch("ollama_agent.agent.ChatOllama")
+    def test_default_system_prompt_is_none(self, mock_chat):
+        agent = OllamaAgent()
+        assert agent._system_prompt is None
 
 
 class TestOllamaAgentParseToolCall:
