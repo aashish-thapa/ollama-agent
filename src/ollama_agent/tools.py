@@ -11,7 +11,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 from .config import config
 from .exceptions import ToolNotFoundError, ToolRegistrationError

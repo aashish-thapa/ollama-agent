@@ -28,7 +28,7 @@ Configuration:
     ... )
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from .agent import OllamaAgent
 from .config import Config, config

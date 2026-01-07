@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ollama-agent"
-version = "0.1.0"
+version = "0.1.1"
 description = "A lightweight AI agent library powered by Ollama with built-in tools and custom tool support"
 readme = "README.md"
 license = "MIT"
@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     "langchain-ollama>=0.2.0",
     "langchain-core>=0.3.0",
-    "duckduckgo-search>=6.0.0",
+    "ddgs>=6.0.0",
     "python-dotenv>=1.0.0",
 ]
 
