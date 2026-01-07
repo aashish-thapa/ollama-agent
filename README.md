@@ -8,6 +8,8 @@
 
 A lightweight AI agent library powered by [Ollama](https://ollama.ai) with built-in tools and custom tool support.
 
+*For example project, visit [ollama-agent-cli](https://github.com/aashish-thapa/ollama-agent-cli/blob/main/main.py)*
+
 ## Features
 
 - **Simple API** - Get started with just a few lines of code
