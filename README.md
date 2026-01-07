@@ -1,15 +1,21 @@
 # Ollama Agent
 
-A lightweight AI agent library powered by Ollama with built-in tools and custom tool support.
+[![PyPI version](https://img.shields.io/pypi/v/ollama-agent.svg)](https://pypi.org/project/ollama-agent/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/ollama-agent.svg)](https://pypi.org/project/ollama-agent/)
+[![CI](https://github.com/aashish-thapa/ollama-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/aashish-thapa/ollama-agent/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/pypi/dm/ollama-agent.svg)](https://pypi.org/project/ollama-agent/)
+
+A lightweight AI agent library powered by [Ollama](https://ollama.ai) with built-in tools and custom tool support.
 
 ## Features
 
-- Simple, intuitive API
-- 10 built-in tools (web search, calculator, weather, system info, etc.)
-- Easy custom tool registration via decorators or functions
-- Configurable via environment variables or constructor parameters
-- Optional user approval for dangerous operations
-- Conversation history management
+- **Simple API** - Get started with just a few lines of code
+- **10 Built-in Tools** - Web search, calculator, weather, system info, and more
+- **Custom Tools** - Easy registration via decorators or functions
+- **Configurable** - Environment variables or constructor parameters
+- **Safe by Default** - Optional user approval for dangerous operations
+- **Conversation Memory** - Maintains context across queries
 
 ## Installation
 
@@ -17,18 +23,10 @@ A lightweight AI agent library powered by Ollama with built-in tools and custom 
 pip install ollama-agent
 ```
 
-Or install from source:
-
-```bash
-git clone https://github.com/aashish-thapa/ollama-agent.git
-cd ollama-agent-lib
-pip install -e .
-```
-
 ## Prerequisites
 
 - Python 3.10+
-- [Ollama](https://ollama.ai) installed and running locally
+- [Ollama](https://ollama.ai) installed and running
 - A model pulled (e.g., `ollama pull llama3.2`)
 
 ## Quick Start
@@ -43,11 +41,11 @@ agent = OllamaAgent()
 response = agent.run("What's the current time?")
 print(response)
 
-# Run another query (conversation history is maintained)
+# Conversation history is maintained
 response = agent.run("And what's the weather in New York?")
 print(response)
 
-# Reset conversation when needed
+# Reset when needed
 agent.reset()
 ```
 
@@ -60,12 +58,7 @@ from ollama_agent import OllamaAgent, register_tool
 
 @register_tool("greet", description="Greet someone by name. Input: name")
 def greet(name: str) -> str:
-    return f"Hello, {name}! Nice to meet you."
-
-@register_tool("add_numbers", description="Add two numbers. Input: two numbers separated by comma")
-def add_numbers(input_str: str) -> str:
-    a, b = map(float, input_str.split(","))
-    return f"Result: {a + b}"
+    return f"Hello, {name}!"
 
 agent = OllamaAgent()
 response = agent.run("Greet Alice")
@@ -74,7 +67,7 @@ response = agent.run("Greet Alice")
 ### Using Function Registration
 
 ```python
-from ollama_agent import OllamaAgent, register_tool_func
+from ollama_agent import register_tool_func
 
 def my_tool(input_str: str) -> str:
     return f"Processed: {input_str}"
@@ -82,75 +75,61 @@ def my_tool(input_str: str) -> str:
 register_tool_func(
     name="my_tool",
     func=my_tool,
-    description="Process some input. Input: text to process"
+    description="Process input text"
 )
-
-agent = OllamaAgent()
 ```
 
 ### Instance-specific Tools
 
 ```python
-from ollama_agent import OllamaAgent
-
 agent = OllamaAgent()
 
-# Add tool to this agent only
 agent.add_tool(
     name="uppercase",
     func=lambda text: text.upper(),
-    description="Convert text to uppercase. Input: text"
+    description="Convert text to uppercase"
 )
 
 response = agent.run("Convert 'hello' to uppercase")
-
-# Remove when done
 agent.remove_tool("uppercase")
 ```
 
 ## Configuration
 
-### Via Constructor
+### Constructor Parameters
 
 ```python
-from ollama_agent import OllamaAgent
-
 agent = OllamaAgent(
-    model="llama3.2",              # Ollama model name
-    base_url="http://localhost:11434",  # Ollama API URL
-    temperature=0.7,               # Model temperature (0-1)
-    max_iterations=10,             # Max tool calls per query
-    approval_callback=my_callback, # Optional approval function
+    model="llama3.2",                    # Ollama model name
+    base_url="http://localhost:11434",   # Ollama API URL
+    temperature=0.7,                     # Model temperature (0-1)
+    max_iterations=10,                   # Max tool calls per query
+    approval_callback=my_callback,       # Optional approval function
 )
 ```
 
-### Via Environment Variables
+### Environment Variables
 
 ```bash
-export OLLAMA_MODEL=llama3.2
-export OLLAMA_BASE_URL=http://localhost:11434
-export TEMPERATURE=0.7
-export MAX_ITERATIONS=10
-export MAX_SEARCH_RESULTS=5
-export REQUIRE_APPROVAL_COMMANDS=true
-export REQUIRE_APPROVAL_FILES=false
+OLLAMA_MODEL=llama3.2
+OLLAMA_BASE_URL=http://localhost:11434
+TEMPERATURE=0.7
+MAX_ITERATIONS=10
+MAX_SEARCH_RESULTS=5
+REQUIRE_APPROVAL_COMMANDS=true
+REQUIRE_APPROVAL_FILES=false
 ```
 
 ## Approval Callback
 
-For dangerous operations (like shell commands), you can require user approval:
+Require user approval for dangerous operations:
 
 ```python
-from ollama_agent import OllamaAgent
-
 def approval_callback(tool_name: str, tool_input: str) -> bool:
-    """Return True to allow, False to deny."""
-    print(f"Tool: {tool_name}")
-    print(f"Input: {tool_input}")
+    print(f"Tool: {tool_name}, Input: {tool_input}")
     return input("Allow? (y/n): ").lower() == "y"
 
 agent = OllamaAgent(approval_callback=approval_callback)
-response = agent.run("List files in my home directory")
 ```
 
 ## Built-in Tools
@@ -159,7 +138,7 @@ response = agent.run("List files in my home directory")
 |------|-------------|
 | `web_search` | Search the web using DuckDuckGo |
 | `get_current_time` | Get current date and time |
-| `run_command` | Run shell commands (requires approval by default) |
+| `run_command` | Run shell commands (requires approval) |
 | `system_info` | Get CPU, memory, disk, uptime info |
 | `weather` | Get current weather |
 | `calculator` | Evaluate math expressions |
@@ -187,28 +166,48 @@ class OllamaAgent:
 
     def run(self, query: str, verbose: bool = False) -> str: ...
     def reset(self) -> None: ...
-    def add_tool(self, name: str, func: Callable, description: str, requires_approval: str = None) -> None: ...
+    def add_tool(self, name, func, description, requires_approval=None) -> None: ...
     def remove_tool(self, name: str) -> None: ...
     def get_history(self) -> list[dict]: ...
+
+    @property
+    def tools(self) -> dict: ...
+    @property
+    def model(self) -> str: ...
 ```
 
-### Tool Registration
+### Tool Functions
 
 ```python
-# Decorator
+# Decorator registration
 @register_tool(name: str, description: str, requires_approval: str = None)
 def my_tool(input: str) -> str: ...
 
-# Function
-register_tool_func(name: str, func: Callable, description: str, requires_approval: str = None)
+# Function registration
+register_tool_func(name, func, description, requires_approval=None)
 
-# Unregister
+# Management
 unregister_tool(name: str)
-
-# Query
+get_tool(name: str) -> dict
 get_all_tools() -> dict
 list_tools() -> list[str]
-get_tool(name: str) -> dict
+```
+
+## Development
+
+```bash
+# Clone the repo
+git clone https://github.com/aashish-thapa/ollama-agent.git
+cd ollama-agent
+
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run linting
+ruff check src/
 ```
 
 ## License
