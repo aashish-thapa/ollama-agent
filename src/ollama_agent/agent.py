@@ -119,6 +119,7 @@ class OllamaAgent:
         tools: Optional[Dict[str, Dict[str, Any]]] = None,
         config: Optional[Config] = None,
         system_prompt: Optional[str] = None,
+        num_predict: Optional[int] = None,
     ):
         """Initialize the Ollama agent.
 
@@ -135,6 +136,7 @@ class OllamaAgent:
             system_prompt: Optional custom system prompt template. Use {tools}
                           placeholder to insert the tool list. If None, uses
                           DEFAULT_SYSTEM_PROMPT.
+            num_predict: Maximum number of tokens to generate (default: -1 unlimited)
         """
         self._config = config or default_config
 
@@ -145,11 +147,16 @@ class OllamaAgent:
         self._max_iterations = max_iterations or self._config.max_iterations
         self._system_prompt = system_prompt
 
-        self.llm = ChatOllama(
-            model=self._model,
-            base_url=self._base_url,
-            temperature=self._temperature,
-        )
+        # Build ChatOllama kwargs
+        llm_kwargs = {
+            "model": self._model,
+            "base_url": self._base_url,
+            "temperature": self._temperature,
+        }
+        if num_predict is not None:
+            llm_kwargs["num_predict"] = num_predict
+
+        self.llm = ChatOllama(**llm_kwargs)
 
         self.approval_callback = approval_callback
         self._tools = tools if tools is not None else TOOLS
@@ -226,6 +233,21 @@ class OllamaAgent:
         Returns:
             Tuple of (tool_name, tool_input) or None if no tool call
         """
+        # If response contains JSON object, don't treat as tool call
+        # This handles cases where model outputs both tool call and JSON
+        if '{' in response and '}' in response:
+            # Check if there's a complete JSON object
+            start = response.find('{')
+            depth = 0
+            for i, char in enumerate(response[start:], start):
+                if char == '{':
+                    depth += 1
+                elif char == '}':
+                    depth -= 1
+                    if depth == 0:
+                        # Found complete JSON, don't parse as tool call
+                        return None
+
         lines = response.strip().split("\n")
         tool_name = None
         tool_input = ""
@@ -334,7 +356,7 @@ class OllamaAgent:
                     self._messages.append(AIMessage(content=response_text))
                     self._messages.append(
                         HumanMessage(
-                            content=f"TOOL RESULT:\n{result}\n\nProvide a helpful response based on this result."
+                            content=f"TOOL RESULT:\n{result}\n\nContinue with your task based on this result."
                         )
                     )
                 else:
